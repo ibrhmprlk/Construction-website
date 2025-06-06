@@ -1,51 +1,19 @@
 <?php
 include 'db.php';
 
-$durum = $_GET['durum'] ?? '';
-
 $mesaj = '';
 $tur = '';
-
-switch ($durum) {
-    case 'basarili':
-        $mesaj = "Ürün başarıyla eklendi.";
-        $tur = "success";
-        break;
-    case 'upload_error':
-        $mesaj = "Görsel yüklenirken hata oluştu.";
-        $tur = "error";
-        break;
-    case 'db_error':
-        $mesaj = "Veritabanına kayıtta hata oluştu.";
-        $tur = "error";
-        break;
-    case 'stmt_error':
-        $mesaj = "Veritabanı sorgusu hazırlanamadı.";
-        $tur = "error";
-        break;
-    case 'no_file':
-        $mesaj = "Lütfen bir ürün görseli seçin.";
-        $tur = "error";
-        break;
-    default:
-        $mesaj = '';
-        $tur = '';
-        break;
-}
-
-$id = $_GET['id'] ?? null;
-$isim = $unvan = $img = $github = $instagram = '';
 $hata = '';
 $basarili = '';
 
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
-    $id = $_POST['id'] ?? null;
     $isim = $_POST['isim'] ?? '';
     $unvan = $_POST['unvan'] ?? '';
     $github = $_POST['github_link'] ?? '';
     $instagram = $_POST['instagram_link'] ?? '';
+    $img = '';
 
-    // Görsel yükleme işlemi
+    // Görsel yükleme işlemi zorunlu
     if (isset($_FILES['img']) && $_FILES['img']['error'] === UPLOAD_ERR_OK) {
         $dosyaAdi = basename($_FILES['img']['name']);
         $hedefKlasor = 'uploads/';
@@ -61,62 +29,25 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             $hata = "Görsel yüklenirken bir hata oluştu.";
         }
     } else {
-        // Eğer güncelleme ise ve yeni resim yüklenmediyse, eski resmi koru
-        if ($id) {
-            $stmt = $baglanti->prepare("SELECT img FROM takim WHERE id=? LIMIT 1");
-            $stmt->bind_param("i", $id);
-            $stmt->execute();
-            $result = $stmt->get_result();
-            $uye = $result->fetch_assoc();
-            if ($uye) {
-                $img = $uye['img'];
-            }
-            $stmt->close();
-        }
+        $hata = "Lütfen bir ürün görseli seçin.";
     }
 
     if (!$hata) {
-        if ($id) {
-            // Güncelleme
-            $stmt = $baglanti->prepare("UPDATE takim SET isim=?, unvan=?, img=?, github_link=?, instagram_link=? WHERE id=?");
-            $stmt->bind_param("sssssi", $isim, $unvan, $img, $github, $instagram, $id);
-            if ($stmt->execute()) {
-                $basarili = "Üye başarıyla güncellendi.";
-            } else {
-                $hata = "Güncelleme sırasında hata oluştu: " . $stmt->error;
-            }
-            $stmt->close();
+        $stmt = $baglanti->prepare("INSERT INTO takim (isim, unvan, img, github_link, instagram_link) VALUES (?, ?, ?, ?, ?)");
+        $stmt->bind_param("sssss", $isim, $unvan, $img, $github, $instagram);
+        if ($stmt->execute()) {
+            $basarili = "Üye başarıyla eklendi.";
+            // Formu temizlemek için değişkenleri boş yapabiliriz
+            $isim = $unvan = $github = $instagram = '';
+            $img = '';
         } else {
-            // Yeni ekleme
-            $stmt = $baglanti->prepare("INSERT INTO takim (isim, unvan, img, github_link, instagram_link) VALUES (?, ?, ?, ?, ?)");
-            $stmt->bind_param("sssss", $isim, $unvan, $img, $github, $instagram);
-            if ($stmt->execute()) {
-                header("Location: ekle.php?durum=basarili");
-                exit;
-            } else {
-                $hata = "Ekleme sırasında hata oluştu: " . $stmt->error;
-            }
-            $stmt->close();
+            $hata = "Ekleme sırasında hata oluştu: " . $stmt->error;
         }
+        $stmt->close();
     }
-}
-
-if ($id && $_SERVER['REQUEST_METHOD'] !== 'POST') {
-    $stmt = $baglanti->prepare("SELECT * FROM takim WHERE id=? LIMIT 1");
-    $stmt->bind_param("i", $id);
-    $stmt->execute();
-    $result = $stmt->get_result();
-    $uye = $result->fetch_assoc();
-    if ($uye) {
-        $isim = $uye['isim'];
-        $unvan = $uye['unvan'];
-        $img = $uye['img'];
-        $github = $uye['github_link'];
-        $instagram = $uye['instagram_link'];
-    } else {
-        $hata = "Üye bulunamadı.";
-    }
-    $stmt->close();
+} else {
+    // İlk yüklemede boş değerler
+    $isim = $unvan = $github = $instagram = '';
 }
 ?>
 
@@ -125,11 +56,10 @@ if ($id && $_SERVER['REQUEST_METHOD'] !== 'POST') {
 <head>
 <meta charset="utf-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no" />
-<title><?= $id ? "Üye Düzenle" : "Yeni Üye Ekle" ?></title>
+<title>Yeni Takım Üyesi Ekle</title>
 <link href="vendor/bootstrap/css/bootstrap.min.css" rel="stylesheet">
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" />
 <style>
-/* CSS aynı şekilde... */
 body {
     font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
     background-color: #121212;
@@ -268,44 +198,37 @@ body.light-mode .back-button:hover {
     color: #fff;
 }
 #theme-toggle {
-        position: fixed;
-        bottom: 25px;
-        right: 25px;
-        z-index: 999;
-        background-color:black;
-        border: none;
-        color: white;
-        padding: 8px 12px;
-        border-radius: 5px;
-        cursor: pointer;
-        font-weight: 600;
-        box-shadow: 0 2px 6px rgba(0, 0, 0, 0.18);
-        transition: background-color 0.3s ease;
-      }
-
-      #theme-toggle:hover {
-        background-color: rgba(96, 94, 94, 0.33);
-      }
+    position: fixed;
+    bottom: 25px;
+    right: 25px;
+    z-index: 999;
+    background-color:black;
+    border: none;
+    color: white;
+    padding: 8px 12px;
+    border-radius: 5px;
+    cursor: pointer;
+    font-weight: 600;
+    box-shadow: 0 2px 6px rgba(0, 0, 0, 0.18);
+    transition: background-color 0.3s ease;
+}
+#theme-toggle:hover {
+    background-color: rgba(96, 94, 94, 0.33);
+}
 </style>
 </head>
 <body>
 
 <form method="post" enctype="multipart/form-data">
-    <h2><?= $id ? "Üye Düzenle" : "Yeni Takım Üyesi Ekle" ?></h2>
-
-    <?php if ($mesaj): ?>
-        <div class="message <?= $tur === 'error' ? 'error' : 'success' ?>" id="successMsg"><?= htmlspecialchars($mesaj) ?></div>
-    <?php endif; ?>
+    <h2>Yeni Takım Üyesi Ekle</h2>
 
     <?php if ($hata): ?>
-        <div class="message error" id="successMsg"><?= htmlspecialchars($hata) ?></div>
+        <div class="message error"><?= htmlspecialchars($hata) ?></div>
     <?php endif; ?>
 
     <?php if ($basarili): ?>
-        <div class="message success" id="successMsg"><?= htmlspecialchars($basarili) ?></div>
+        <div class="message success"><?= htmlspecialchars($basarili) ?></div>
     <?php endif; ?>
-
-    <input type="hidden" name="id" value="<?= htmlspecialchars($id) ?>">
 
     <label for="isim">İsim:</label>
     <input type="text" id="isim" name="isim" required value="<?= htmlspecialchars($isim) ?>" autocomplete="off">
@@ -313,8 +236,8 @@ body.light-mode .back-button:hover {
     <label for="unvan">Ünvan:</label>
     <input type="text" id="unvan" name="unvan" required value="<?= htmlspecialchars($unvan) ?>" autocomplete="off">
 
-    <label for="img">Ürün Görseli (<?= $id ? 'Değiştirmek istemiyorsanız boş bırakabilirsiniz' : 'Zorunlu' ?>):</label>
-    <input type="file" id="img" name="img" <?= $id ? '' : 'required' ?> accept="image/*">
+    <label for="img">Ürün Görseli (Zorunlu):</label>
+    <input type="file" id="img" name="img" required accept="image/*">
 
     <label for="github_link">GitHub Linki:</label>
     <input type="text" id="github_link" name="github_link" value="<?= htmlspecialchars($github) ?>" autocomplete="off">
@@ -322,11 +245,9 @@ body.light-mode .back-button:hover {
     <label for="instagram_link">Instagram Linki:</label>
     <input type="text" id="instagram_link" name="instagram_link" value="<?= htmlspecialchars($instagram) ?>" autocomplete="off">
 
-    <input type="hidden" name="existing_img" value="<?= htmlspecialchars($img) ?>">
-
     <div class="buttons">
-    <a href="index.php#team" class="back-button">Home</a>
-        <button type="submit"><?= $id ? "Güncelle" : "Ekle" ?></button>
+        <a href="index.php#team" class="back-button">Home</a>
+        <button type="submit">Ekle</button>
         <a href="urun.php" class="back-button">Geri Dön</a>
     </div>
 </form>
@@ -362,7 +283,7 @@ window.onload = () => {
     }
     document.getElementById('theme-toggle').addEventListener('click', toggleTheme);
 
-    const successMsg = document.getElementById('successMsg');
+    const successMsg = document.querySelector('.message.success');
     if(successMsg){
         setTimeout(() => {
             successMsg.style.opacity = '0';
