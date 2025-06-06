@@ -10,7 +10,6 @@ $result = $stmt->get_result();
 $uye = $result->fetch_assoc();
 
 $upload_error = '';
-$guncelleme_basarili = false;
 
 // POST ile gönderim varsa güncelle
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
@@ -51,13 +50,13 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $stmt->bind_param("sssssi", $isim, $unvan, $img, $github, $instagram, $id);
 
     if ($stmt->execute()) {
-        $guncelleme_basarili = true;
+        header("Location: " . $_SERVER['PHP_SELF'] . "?id=$id&success=1");
+        exit();
     } else {
         echo "Hata oluştu: " . $stmt->error;
     }
 }
 ?>
-
 
 <!DOCTYPE html>
 <html lang="tr">
@@ -65,7 +64,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     <meta charset="UTF-8" />
     <title>Üye Güncelle</title>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css" crossorigin="anonymous" referrerpolicy="no-referrer" />
-    
     <style>
         .success-message {
             margin-bottom: 15px;
@@ -121,22 +119,18 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             position: fixed;
             bottom: 25px;
             right: 25px;
-           
             background-color:black;
             border: none;
             color: white;
             padding: 8px 12px;
             border-radius: 5px;
             cursor: pointer;
-          
             box-shadow: 0 2px 6px rgba(0, 0, 0, 0.18);
             transition: background-color 0.3s ease;
-
         }
         .theme-toggle:hover {
             background-color: rgba(96, 94, 94, 0.33);
         }
-   
         body.light .theme-toggle:hover {
             background-color:  #444  !important;
             border-color: #222 !important;
@@ -247,7 +241,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 <form method="post" enctype="multipart/form-data" novalidate>
     <h2><i class="fa-solid fa-user-pen"></i> Takım Üyesini Güncelle</h2>
 
-    <?php if ($guncelleme_basarili): ?>
+    <?php if (isset($_GET['success']) && $_GET['success'] == 1): ?>
         <div class="success-message" id="successMsg">Güncelleme başarılı!</div>
     <?php endif; ?>
 
@@ -266,7 +260,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     <label><i class="fa-solid fa-image"></i> Fotoğraf (Yeni yüklemezsen eski kalır)</label>
     <div class="input-group">
         <i class="fa-solid fa-file-image"></i>
-        <input type="file" name="img" accept="image/*" aria-describedby="uploadHelp">
+        <input type="file" name="img" accept="image/*">
     </div>
     <?php if ($uye['img'] && file_exists($uye['img'])): ?>
         <img src="<?= htmlspecialchars($uye['img']) ?>" alt="Mevcut Fotoğraf" class="upload-preview" loading="lazy" />
@@ -290,12 +284,10 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     <div class="buttons">
         <button type="submit" aria-label="Güncelle"><i class="fa-solid fa-floppy-disk"></i> Güncelle</button>
         <a href="index.php#team" class="back-button" aria-label="Geri dön"><i class="fa-solid fa-arrow-left"></i> Geri</a>
-       
     </div>
 </form>
 
 <script>
-    // Tema tercihini yerel depolamada tut
     function toggleTheme() {
         document.body.classList.toggle('light');
         let isLight = document.body.classList.contains('light');
@@ -304,27 +296,21 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     }
     function updateIcon(isLight) {
         const icon = document.getElementById('themeIcon');
-        if (isLight) {
-            icon.classList.remove('fa-moon');
-            icon.classList.add('fa-sun');
-        } else {
-            icon.classList.remove('fa-sun');
-            icon.classList.add('fa-moon');
-        }
+        icon.classList.toggle('fa-sun', isLight);
+        icon.classList.toggle('fa-moon', !isLight);
     }
-window.onload = function() {
-  var successMessage = document.querySelector('.success-message');
 
-  // Eğer güncelleme başarılı mesajı varsa ve daha önce yenilenmediysek
-  if (successMessage && !sessionStorage.getItem('pageReloaded')) {
-    // Sayfayı yenile ve flag'i işaretle
-    sessionStorage.setItem('pageReloaded', 'true');
-    location.reload();
-  } else {
-    // Flag varsa veya mesaj yoksa flag'i temizle (isteğe bağlı)
-    sessionStorage.removeItem('pageReloaded');
-  }
-};
+    window.onload = function () {
+        const successMessage = document.getElementById('successMsg');
+        if (successMessage) {
+            setTimeout(function () {
+                successMessage.style.opacity = '0';
+                setTimeout(() => {
+                    successMessage.style.display = 'none';
+                }, 500);
+            }, 2000);
+        }
+    };
 </script>
 
 </body>
