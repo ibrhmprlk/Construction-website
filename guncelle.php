@@ -312,23 +312,19 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             icon.classList.add('fa-moon');
         }
     }
-    window.onload = () => {
-        const savedTheme = localStorage.getItem('theme');
-        if (savedTheme === 'light') {
-            document.body.classList.add('light');
-            updateIcon(true);
-        } else {
-            updateIcon(false);
-        }
-        // Başarı mesajını 4 saniye sonra gizle
-        const successMsg = document.getElementById('successMsg');
-        if(successMsg){
-            setTimeout(() => {
-                successMsg.style.opacity = '0';
-                setTimeout(() => successMsg.style.display = 'none', 500);
-            }, 2000);
-        }
-    };
+window.onload = function() {
+  var successMessage = document.querySelector('.success-message');
+
+  // Eğer güncelleme başarılı mesajı varsa ve daha önce yenilenmediysek
+  if (successMessage && !sessionStorage.getItem('pageReloaded')) {
+    // Sayfayı yenile ve flag'i işaretle
+    sessionStorage.setItem('pageReloaded', 'true');
+    location.reload();
+  } else {
+    // Flag varsa veya mesaj yoksa flag'i temizle (isteğe bağlı)
+    sessionStorage.removeItem('pageReloaded');
+  }
+};
 </script>
 
 </body>
