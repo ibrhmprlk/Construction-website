@@ -236,7 +236,7 @@ body.light-mode .back-button:hover {
     <label for="unvan">Ünvan:</label>
     <input type="text" id="unvan" name="unvan" required value="<?= htmlspecialchars($unvan) ?>" autocomplete="off">
 
-    <label for="img">Ürün Görseli (Zorunlu):</label>
+    <label for="img">Kişi Görseli (Zorunlu):</label>
     <input type="file" id="img" name="img" required accept="image/*">
 
     <label for="github_link">GitHub Linki:</label>
