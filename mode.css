@@ -1,0 +1,28 @@
+body.light-mode {
+    background-color: white;
+    color: black;
+  }
+  
+  body.dark-mode {
+    background-color: #121212;
+    color: white;
+  }
+  
+  .main-bannerr {
+    background-image: url(../images/banner-bg.jpg);
+    background-position: right bottom;
+    background-repeat: no-repeat;
+    background-size: cover;
+    padding: 170px 0 120px 0;
+  }
+  
+  body.light-mode .main-bannerr h1,
+  body.light-mode .main-bannerr p {
+    color: black;
+  }
+  
+  body.dark-mode .main-bannerr h1,
+  body.dark-mode .main-bannerr p {
+    color: white;
+  }
+  
