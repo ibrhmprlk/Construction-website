@@ -288,18 +288,38 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 </form>
 
 <script>
-    function toggleTheme() {
-        document.body.classList.toggle('light');
-        let isLight = document.body.classList.contains('light');
-        localStorage.setItem('theme', isLight ? 'light' : 'dark');
-        updateIcon(isLight);
-    }
-    function updateIcon(isLight) {
-        const icon = document.getElementById('themeIcon');
-        icon.classList.toggle('fa-sun', isLight);
-        icon.classList.toggle('fa-moon', !isLight);
-    }
+ window.addEventListener('DOMContentLoaded', () => {
+        const savedTheme = localStorage.getItem('theme');
+        const themeIcon = document.getElementById('themeIcon');
 
+        if (savedTheme === 'light') {
+            document.body.classList.add('light');
+            themeIcon.classList.remove('fa-moon');
+            themeIcon.classList.add('fa-sun');
+        } else {
+            document.body.classList.remove('light');
+            themeIcon.classList.remove('fa-sun');
+            themeIcon.classList.add('fa-moon');
+        }
+    });
+
+    // Tema değiştirme fonksiyonu
+    function toggleTheme() {
+        const body = document.body;
+        const themeIcon = document.getElementById('themeIcon');
+
+        const isLight = body.classList.toggle('light');
+
+        if (isLight) {
+            localStorage.setItem('theme', 'light');
+            themeIcon.classList.remove('fa-moon');
+            themeIcon.classList.add('fa-sun');
+        } else {
+            localStorage.setItem('theme', 'dark');
+            themeIcon.classList.remove('fa-sun');
+            themeIcon.classList.add('fa-moon');
+        }
+    }
     window.onload = function () {
         const successMessage = document.getElementById('successMsg');
         if (successMessage) {
